@@ -2,31 +2,25 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 export default function Details() {
-  const { id } = useParams();
+  const { id } = useParams(); // Get the hazard ID from the URL
   const navigate = useNavigate();
 
   const [issue, setIssue] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedIssue, setEditedIssue] = useState(null);
 
+  // Fetch hazard details from the API
   const fetchIssueDetails = async () => {
     try {
-      const data = {
-        id,
-        image:
-          "https://img.freepik.com/free-photo/vertical-shot-road-with-magnificent-mountains-blue-sky-captured-california_181624-44891.jpg?t=st=1743061145~exp=1743064745~hmac=f30667e8a003d8c7da7919906477e7874fb8f0cdcfa31f8ce98b9f162275ce52&w=740",
-        type: "Road Repair",
-        city: "Ramallah",
-        severity: "Medium",
-        address: "123 Main St",
-        description: "The road needs repair due to severe damage.",
-        status: "Under Review", // Change this status to see different buttons
-      };
-
+      const response = await fetch(`http://localhost:5000/api/Hazard/ViewHazard/${id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch hazard details");
+      }
+      const data = await response.json();
       setIssue(data);
       setEditedIssue(data);
     } catch (error) {
-      console.error("Error fetching issue details:", error);
+      console.error("Error fetching hazard details:", error);
     }
   };
 
@@ -35,7 +29,7 @@ export default function Details() {
   }, [id]);
 
   const handleBack = () => {
-    navigate(-1);
+    navigate(-1); // Navigate back to the previous page
   };
 
   const handleEdit = () => {
@@ -44,10 +38,25 @@ export default function Details() {
 
   const handleSave = async () => {
     try {
-      setIssue(editedIssue);
+      const response = await fetch(`http://localhost:5000/api/Hazard/UpdateHazard/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editedIssue),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update hazard details");
+      }
+
+      const updatedData = await response.json();
+      setIssue(updatedData);
       setIsEditing(false);
+      alert("Hazard updated successfully!");
     } catch (error) {
-      console.error("Error saving issue details:", error);
+      console.error("Error updating hazard details:", error);
+      alert("Failed to update hazard. Please try again.");
     }
   };
 
@@ -56,15 +65,32 @@ export default function Details() {
     setEditedIssue({ ...editedIssue, [name]: value });
   };
 
-  const handleAction = (action) => {
-    if (action === "Accept") {
-      // Handle accept action (e.g., send to backend)
-    } else if (action === "Reject") {
-      // Handle reject action
-    } else if (action === "Complete") {
-      // Handle complete action
-    } else if (action === "Cancel") {
-      // Handle cancel action
+  const handleAction = async (action) => {
+    try {
+      let updatedStatus;
+      if (action === "Accept") updatedStatus = 1; // In Progress
+      else if (action === "Reject") updatedStatus = -1; // Rejected
+      else if (action === "Complete") updatedStatus = 2; // Completed
+      else if (action === "Cancel") updatedStatus = -2; // Canceled
+
+      const response = await fetch(`http://localhost:5000/api/Hazard/UpdateHazard/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...editedIssue, status: updatedStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update hazard status");
+      }
+
+      const updatedData = await response.json();
+      setIssue(updatedData);
+      alert(`Hazard status updated to ${action}`);
+    } catch (error) {
+      console.error("Error updating hazard status:", error);
+      alert("Failed to update hazard status. Please try again.");
     }
   };
 
@@ -82,7 +108,7 @@ export default function Details() {
         <div className="row">
           <div className="col-md-4 d-flex align-items-center">
             <img
-              src={issue.image}
+              src={issue.urlimage || "https://via.placeholder.com/150"}
               className="img-fluid rounded"
               alt={issue.type}
             />
@@ -175,7 +201,7 @@ export default function Details() {
             </div>
 
             <div className="mb-3 d-flex justify-content-start">
-              {issue.status === "Under Review" && (
+              {issue.status === 0 && ( // Under Review
                 <>
                   <button
                     className="btn btn-success me-2"
@@ -192,7 +218,7 @@ export default function Details() {
                 </>
               )}
 
-              {issue.status === "In Process" && (
+              {issue.status === 1 && ( // In Progress
                 <>
                   <button
                     className="btn btn-primary me-2"
@@ -209,7 +235,7 @@ export default function Details() {
                 </>
               )}
 
-              {issue.status === "Completed" && (
+              {issue.status === 2 && ( // Completed
                 <p className="text-muted">
                   This issue is completed. No further actions are needed.
                 </p>
