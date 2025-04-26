@@ -19,7 +19,7 @@ export default function AddEmployee() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.password !== formData.repeatPassword) {
@@ -27,11 +27,47 @@ export default function AddEmployee() {
       return;
     }
 
-    // Simulated API call
-    console.log("Employee Added:", formData);
-    alert("Employee added successfully!");
+    const employeeData = {
+      UserModel: {
+        Name: `${formData.firstName} ${formData.middleName} ${formData.lastName}`,
+        Email: formData.email,
+        PhoneNumber: formData.phone,
+        Role: "Employee",
+        Status: true,
+      },
+      EmployeeModel: {
+        Position: formData.section,
+        ReportsTo: null, // Update this if needed
+      },
+      AccountModel: {
+        Password: formData.password,
+      },
+    };
 
-    navigate("/employees");
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/Manager/AddEmployee?municipalityId=1", // Replace with your actual API endpoint and municipalityId
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(employeeData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to add employee");
+      }
+
+      const result = await response.json();
+      console.log("Employee added successfully:", result);
+      alert("Employee added successfully!");
+      navigate("/employees");
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      alert("Failed to add employee. Please try again.");
+    }
   };
 
   return (
