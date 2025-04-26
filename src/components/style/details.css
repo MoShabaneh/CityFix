@@ -1,0 +1,17 @@
+.details-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.details-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.details-container p {
+  font-size: 18px;
+  color: #333;
+}
